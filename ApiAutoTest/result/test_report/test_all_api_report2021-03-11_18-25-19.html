@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Test Report</title>
+    <style>body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  /* do not increase min-width as some may use split screens */
+  min-width: 800px;
+  color: #999;
+}
+
+h1 {
+  font-size: 24px;
+  color: black;
+}
+
+h2 {
+  font-size: 16px;
+  color: black;
+}
+
+p {
+  color: black;
+}
+
+a {
+  color: #999;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+/******************************
+ * SUMMARY INFORMATION
+ ******************************/
+#environment td {
+  padding: 5px;
+  border: 1px solid #E6E6E6;
+}
+#environment tr:nth-child(odd) {
+  background-color: #f6f6f6;
+}
+
+/******************************
+ * TEST RESULT COLORS
+ ******************************/
+span.passed,
+.passed .col-result {
+  color: green;
+}
+
+span.skipped,
+span.xfailed,
+span.rerun,
+.skipped .col-result,
+.xfailed .col-result,
+.rerun .col-result {
+  color: orange;
+}
+
+span.error,
+span.failed,
+span.xpassed,
+.error .col-result,
+.failed .col-result,
+.xpassed .col-result {
+  color: red;
+}
+
+/******************************
+ * RESULTS TABLE
+ *
+ * 1. Table Layout
+ * 2. Extra
+ * 3. Sorting items
+ *
+ ******************************/
+/*------------------
+ * 1. Table Layout
+ *------------------*/
+#results-table {
+  border: 1px solid #e6e6e6;
+  color: #999;
+  font-size: 12px;
+  width: 100%;
+}
+#results-table th,
+#results-table td {
+  padding: 5px;
+  border: 1px solid #E6E6E6;
+  text-align: left;
+}
+#results-table th {
+  font-weight: bold;
+}
+
+/*------------------
+ * 2. Extra
+ *------------------*/
+.log {
+  background-color: #e6e6e6;
+  border: 1px solid #e6e6e6;
+  color: black;
+  display: block;
+  font-family: "Courier New", Courier, monospace;
+  height: 230px;
+  overflow-y: scroll;
+  padding: 5px;
+  white-space: pre-wrap;
+}
+.log:only-child {
+  height: inherit;
+}
+
+div.image {
+  border: 1px solid #e6e6e6;
+  float: right;
+  height: 240px;
+  margin-left: 5px;
+  overflow: hidden;
+  width: 320px;
+}
+div.image img {
+  width: 320px;
+}
+
+div.video {
+  border: 1px solid #e6e6e6;
+  float: right;
+  height: 240px;
+  margin-left: 5px;
+  overflow: hidden;
+  width: 320px;
+}
+div.video video {
+  overflow: hidden;
+  width: 320px;
+  height: 240px;
+}
+
+.collapsed {
+  display: none;
+}
+
+.expander::after {
+  content: " (show details)";
+  color: #BBB;
+  font-style: italic;
+  cursor: pointer;
+}
+
+.collapser::after {
+  content: " (hide details)";
+  color: #BBB;
+  font-style: italic;
+  cursor: pointer;
+}
+
+/*------------------
+ * 3. Sorting items
+ *------------------*/
+.sortable {
+  cursor: pointer;
+}
+
+.sort-icon {
+  font-size: 0px;
+  float: left;
+  margin-right: 5px;
+  margin-top: 5px;
+  /*triangle*/
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+}
+.inactive .sort-icon {
+  /*finish triangle*/
+  border-top: 8px solid #E6E6E6;
+}
+.asc.active .sort-icon {
+  /*finish triangle*/
+  border-bottom: 8px solid #999;
+}
+.desc.active .sort-icon {
+  /*finish triangle*/
+  border-top: 8px solid #999;
+}
+</style></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) { // eslint-disable-line no-redeclare
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function findAll(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sortColumn(elem) {
+    toggleSortStates(elem);
+    const colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    let key;
+    if (elem.classList.contains('result')) {
+        key = keyResult;
+    } else if (elem.classList.contains('links')) {
+        key = keyLink;
+    } else {
+        key = keyAlpha;
+    }
+    sortTable(elem, key(colIndex));
+}
+
+function showAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(showExtras);
+}
+
+function hideAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(hideExtras);
+}
+
+function showExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.remove('collapsed');
+    expandcollapse.classList.remove('expander');
+    expandcollapse.classList.add('collapser');
+}
+
+function hideExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.add('collapsed');
+    expandcollapse.classList.remove('collapser');
+    expandcollapse.classList.add('expander');
+}
+
+function showFilters() {
+    const filterItems = document.getElementsByClassName('filter');
+    for (let i = 0; i < filterItems.length; i++)
+        filterItems[i].hidden = false;
+}
+
+function addCollapse() {
+    // Add links for show/hide all
+    const resulttable = find('table#results-table');
+    const showhideall = document.createElement('p');
+    showhideall.innerHTML = '<a href="javascript:showAllExtras()">Show all details</a> / ' +
+                            '<a href="javascript:hideAllExtras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    findAll('.col-result').forEach(function(elem) {
+        const collapsed = getQueryParameter('collapsed') || 'Passed';
+        const extras = elem.parentNode.nextElementSibling;
+        const expandcollapse = document.createElement('span');
+        if (extras.classList.contains('collapsed')) {
+            expandcollapse.classList.add('expander');
+        } else if (collapsed.includes(elem.innerHTML)) {
+            extras.classList.add('collapsed');
+            expandcollapse.classList.add('expander');
+        } else {
+            expandcollapse.classList.add('collapser');
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener('click', function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains('collapsed')) {
+                showExtras(event.currentTarget);
+            } else {
+                hideExtras(event.currentTarget);
+            }
+        });
+    });
+}
+
+function getQueryParameter(name) {
+    const match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+function init () { // eslint-disable-line no-unused-vars
+    resetSortHeaders();
+
+    addCollapse();
+
+    showFilters();
+
+    sortColumn(find('.initial-sort'));
+
+    findAll('.sortable').forEach(function(elem) {
+        elem.addEventListener('click',
+            function() {
+                sortColumn(elem);
+            }, false);
+    });
+}
+
+function sortTable(clicked, keyFunc) {
+    const rows = findAll('.results-table-row');
+    const reversed = !clicked.classList.contains('asc');
+    const sortedRows = sort(rows, keyFunc, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    const thead = document.getElementById('results-table-head');
+    document.getElementById('results-table').remove();
+    const parent = document.createElement('table');
+    parent.id = 'results-table';
+    parent.appendChild(thead);
+    sortedRows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName('BODY')[0].appendChild(parent);
+}
+
+function sort(items, keyFunc, reversed) {
+    const sortArray = items.map(function(item, i) {
+        return [keyFunc(item), i];
+    });
+
+    sortArray.sort(function(a, b) {
+        const keyA = a[0];
+        const keyB = b[0];
+
+        if (keyA == keyB) return 0;
+
+        if (reversed) {
+            return keyA < keyB ? 1 : -1;
+        } else {
+            return keyA > keyB ? 1 : -1;
+        }
+    });
+
+    return sortArray.map(function(item) {
+        const index = item[1];
+        return items[index];
+    });
+}
+
+function keyAlpha(colIndex) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[colIndex].firstChild.data.toLowerCase();
+    };
+}
+
+function keyLink(colIndex) {
+    return function(elem) {
+        const dataCell = elem.childNodes[1].childNodes[colIndex].firstChild;
+        return dataCell == null ? '' : dataCell.innerText.toLowerCase();
+    };
+}
+
+function keyResult(colIndex) {
+    return function(elem) {
+        const strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+            'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[colIndex].firstChild.data);
+    };
+}
+
+function resetSortHeaders() {
+    findAll('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    findAll('.sortable').forEach(function(elem) {
+        const icon = document.createElement('div');
+        icon.className = 'sort-icon';
+        icon.textContent = 'vvv';
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove('desc', 'active');
+        elem.classList.add('asc', 'inactive');
+    });
+}
+
+function toggleSortStates(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        resetSortHeaders();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function isAllRowsHidden(value) {
+    return value.hidden == false;
+}
+
+function filterTable(elem) { // eslint-disable-line no-unused-vars
+    const outcomeAtt = 'data-test-result';
+    const outcome = elem.getAttribute(outcomeAtt);
+    const classOutcome = outcome + ' results-table-row';
+    const outcomeRows = document.getElementsByClassName(classOutcome);
+
+    for(let i = 0; i < outcomeRows.length; i++){
+        outcomeRows[i].hidden = !elem.checked;
+    }
+
+    const rows = findAll('.results-table-row').filter(isAllRowsHidden);
+    const allRowsHidden = rows.length == 0 ? true : false;
+    const notFoundMessage = document.getElementById('not-found-message');
+    notFoundMessage.hidden = !allRowsHidden;
+}
+</script>
+    <h1>test_all_api_report2021-03-11_18-25-19.html</h1>
+    <p>Report generated on 11-Mar-2021 at 18:25:21 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a> v3.1.1</p>
+    <h2>Environment</h2>
+    <table id="environment">
+      <tr>
+        <td>Packages</td>
+        <td>{"pluggy": "0.13.1", "py": "1.10.0", "pytest": "6.2.1"}</td></tr>
+      <tr>
+        <td>Platform</td>
+        <td>Darwin-19.6.0-x86_64-i386-64bit</td></tr>
+      <tr>
+        <td>Plugins</td>
+        <td>{"html": "3.1.1", "metadata": "1.11.0"}</td></tr>
+      <tr>
+        <td>Python</td>
+        <td>3.7.8</td></tr></table>
+    <h2>Summary</h2>
+    <p>5 tests ran in 0.82 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="passed">4 passed</span>, <input checked="true" class="filter" data-test-result="skipped" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="skipped">0 skipped</span>, <input checked="true" class="filter" data-test-result="failed" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="failed">1 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable" col="duration">Duration</th>
+          <th class="sortable links" col="links">Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="4">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">test_pytest.py::TestCaseWithPytest::test_all[TC001-GET-http://106.13.199.209:8080/futureloan/mvc/api/member/register-Y-None-None-None-expect0-JSON-2]</td>
+          <td class="col-duration">0.12</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;case.test_pytest.TestCaseWithPytest object at 0x7f93bd32bd90&gt;<br/>get_request_method_fixture = &lt;request_method.request_method.RequestMethod object at 0x7f93bd32bf90&gt;<br/>case_id = &#x27;TC001&#x27;, method = &#x27;GET&#x27;<br/>url = &#x27;http://106.13.199.209:8080/futureloan/mvc/api/member/register&#x27;<br/>if_execute = &#x27;Y&#x27;, precondition = None, depend_key = None, pattern = None<br/>expect = {&#x27;code&#x27;: &#x27;10001&#x27;, &#x27;data&#x27;: None, &#x27;msg&#x27;: &#x27;注册成功&#x27;, &#x27;status&#x27;: 0}<br/>data_type = &#x27;JSON&#x27;, row = 2<br/><br/>    @pytest.mark.parametrize(<br/>        &#x27;case_id, method, url, if_execute, precondition, depend_key, pattern, expect, data_type, row&#x27;, get_data())<br/>    def test_all(self, get_request_method_fixture, case_id, method, url, if_execute, precondition, depend_key, pattern,<br/>                 expect, data_type, row):<br/>        print(case_id, if_execute)<br/>        print(&#x27;响应数据类型是&#x27;, data_type)<br/>        print(&#x27;前置条件&#x27;, precondition)<br/>        if if_execute == &quot;Y&quot;:<br/>            print(&quot;现在开始执行第%d行的用例&quot; % row)<br/>            # print(&quot;前置用例是：%s&quot;%precondition_case_id)<br/>            if precondition:<br/>                params = get_request_method_fixture.update_case_params_depend_field(row=row)<br/>                print(params)<br/>            else:<br/>                params = get_request_method_fixture.read_execl.get_case_parameters_value(row=row)<br/>            print(method, url, params)<br/>            actual = get_request_method_fixture.get_case_actual_result(method=method, url=url,<br/>                                                                       response_data_type=data_type, params=params)<br/>            # 断言：如果响应数据类型是JSON，就判断预期结果与实际结果是否相等，如果响应是XML，就判断预期结果<br/>            # 是否包含在实际结果中<br/>            if expect:<br/>                if data_type == &quot;JSON&quot;:<br/>                    try:<br/>                        # self.assertEqual(expect, actual, msg=&quot;实际与预期不一致！&quot;)<br/>&gt;                       assert expect == actual<br/><span class="error">E                       AssertionError: assert {&#x27;code&#x27;: &#x27;100..., &#x27;status&#x27;: 0} == {&#x27;code&#x27;: &#x27;201..., &#x27;status&#x27;: 0}</span><br/><span class="error">E                         Omitting 2 identical items, use -vv to show</span><br/><span class="error">E                         Differing items:</span><br/><span class="error">E                         {&#x27;code&#x27;: &#x27;10001&#x27;} != {&#x27;code&#x27;: &#x27;20110&#x27;}</span><br/><span class="error">E                         {&#x27;msg&#x27;: &#x27;注册成功&#x27;} != {&#x27;msg&#x27;: &#x27;手机号码已被注册&#x27;}</span><br/><span class="error">E                         Use -v to get the full diff</span><br/><br/>test_pytest.py:48: AssertionError<br/><br/>During handling of the above exception, another exception occurred:<br/><br/>self = &lt;case.test_pytest.TestCaseWithPytest object at 0x7f93bd32bd90&gt;<br/>get_request_method_fixture = &lt;request_method.request_method.RequestMethod object at 0x7f93bd32bf90&gt;<br/>case_id = &#x27;TC001&#x27;, method = &#x27;GET&#x27;<br/>url = &#x27;http://106.13.199.209:8080/futureloan/mvc/api/member/register&#x27;<br/>if_execute = &#x27;Y&#x27;, precondition = None, depend_key = None, pattern = None<br/>expect = {&#x27;code&#x27;: &#x27;10001&#x27;, &#x27;data&#x27;: None, &#x27;msg&#x27;: &#x27;注册成功&#x27;, &#x27;status&#x27;: 0}<br/>data_type = &#x27;JSON&#x27;, row = 2<br/><br/>    @pytest.mark.parametrize(<br/>        &#x27;case_id, method, url, if_execute, precondition, depend_key, pattern, expect, data_type, row&#x27;, get_data())<br/>    def test_all(self, get_request_method_fixture, case_id, method, url, if_execute, precondition, depend_key, pattern,<br/>                 expect, data_type, row):<br/>        print(case_id, if_execute)<br/>        print(&#x27;响应数据类型是&#x27;, data_type)<br/>        print(&#x27;前置条件&#x27;, precondition)<br/>        if if_execute == &quot;Y&quot;:<br/>            print(&quot;现在开始执行第%d行的用例&quot; % row)<br/>            # print(&quot;前置用例是：%s&quot;%precondition_case_id)<br/>            if precondition:<br/>                params = get_request_method_fixture.update_case_params_depend_field(row=row)<br/>                print(params)<br/>            else:<br/>                params = get_request_method_fixture.read_execl.get_case_parameters_value(row=row)<br/>            print(method, url, params)<br/>            actual = get_request_method_fixture.get_case_actual_result(method=method, url=url,<br/>                                                                       response_data_type=data_type, params=params)<br/>            # 断言：如果响应数据类型是JSON，就判断预期结果与实际结果是否相等，如果响应是XML，就判断预期结果<br/>            # 是否包含在实际结果中<br/>            if expect:<br/>                if data_type == &quot;JSON&quot;:<br/>                    try:<br/>                        # self.assertEqual(expect, actual, msg=&quot;实际与预期不一致！&quot;)<br/>                        assert expect == actual<br/>                    except AssertionError:<br/>                        print(&quot;预期结果是：%s&quot; % dict(set(expect.items()) - set(actual.items())))<br/>                        print(&quot;实际结果是：%s&quot; % dict(set(actual.items()) - set(expect.items())))<br/>&gt;                       raise AssertionError<br/><span class="error">E                       AssertionError</span><br/><br/>test_pytest.py:52: AssertionError<br/> -----------------------------Captured stdout setup------------------------------ <br/>/Users/qiujie/PycharmProjects/ApiAutoTest/data/path.ini
+<br/> ------------------------------Captured stdout call------------------------------ <br/>TC001 Y
+响应数据类型是 JSON
+前置条件 None
+现在开始执行第2行的用例
+GET http://106.13.199.209:8080/futureloan/mvc/api/member/register {&#x27;mobilephone&#x27;: &#x27;13567589070&#x27;, &#x27;pwd&#x27;: &#x27;123456&#x27;, &#x27;regname&#x27;: &#x27;jake&#x27;}
+{&quot;status&quot;:0,&quot;code&quot;:&quot;20110&quot;,&quot;data&quot;:null,&quot;msg&quot;:&quot;手机号码已被注册&quot;}
+预期结果是：{&#x27;msg&#x27;: &#x27;注册成功&#x27;, &#x27;code&#x27;: &#x27;10001&#x27;}
+实际结果是：{&#x27;code&#x27;: &#x27;20110&#x27;, &#x27;msg&#x27;: &#x27;手机号码已被注册&#x27;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_pytest.py::TestCaseWithPytest::test_all[TC002-POST-http://106.13.199.209:8080/futureloan/mvc/api/member/register-Y-None-None-None-expect1-JSON-3]</td>
+          <td class="col-duration">0.04</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>TC002 Y
+响应数据类型是 JSON
+前置条件 None
+现在开始执行第3行的用例
+POST http://106.13.199.209:8080/futureloan/mvc/api/member/register {&#x27;mobilephone&#x27;: &#x27;13567589070&#x27;, &#x27;pwd&#x27;: &#x27;123456&#x27;, &#x27;regname&#x27;: &#x27;jake&#x27;}
+{&quot;status&quot;:0,&quot;code&quot;:&quot;20110&quot;,&quot;data&quot;:null,&quot;msg&quot;:&quot;手机号码已被注册&quot;}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_pytest.py::TestCaseWithPytest::test_all[TC003-POST-http://106.13.199.209:8080/korei/login.ht-Y-None-None-None-退出-XML-4]</td>
+          <td class="col-duration">0.20</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>TC003 Y
+响应数据类型是 XML
+前置条件 None
+现在开始执行第4行的用例
+POST http://106.13.199.209:8080/korei/login.ht {&#x27;username&#x27;: &#x27;admin&#x27;, &#x27;password&#x27;: &#x27;1&#x27;}
+
+
+&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;
+&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot;&gt;
+
+
+
+
+
+
+
+
+&lt;head&gt;
+    &lt;title&gt;广州宏天软件有限公司--BPMX3流程业务管理平台&lt;/title&gt;
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;/korei/favicon.ico&quot; type=&quot;image/x-icon&quot; /&gt;
+    &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+	&lt;link title=&quot;index&quot; name=&quot;styleTag&quot; rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;/korei/styles/default/css/Aqua/css/ligerui-all.css&quot;&gt;&lt;/link&gt;
+	&lt;link title=&quot;index&quot; name=&quot;styleTag&quot; rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;/korei/styles/default/css/index.css&quot;&gt;&lt;/link&gt;
+	&lt;link title=&quot;index&quot; name=&quot;styleTag&quot; rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;/korei/styles/default/css/select.css&quot;&gt;&lt;/link&gt;
+	&lt;link title=&quot;index&quot; name=&quot;styleTag&quot; rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;/korei/styles/default/css/korei.css&quot;&gt;&lt;/link&gt;
+	&lt;link title=&quot;index&quot; name=&quot;styleTag&quot; rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;/korei/styles/default/css/tree/zTreeStyle.css&quot;&gt;&lt;/link&gt;
+
+	&lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/lang/common/zh_CN.js&quot;&gt;&lt;/script&gt;
+	&lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/lang/js/zh_CN.js&quot;&gt;&lt;/script&gt;
+    
+	&lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/dynamic.jsp&quot;&gt;&lt;/script&gt;
+   	&lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/jquery/jquery.js&quot;&gt;&lt;/script&gt;
+   	&lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/util/util.js&quot;&gt;&lt;/script&gt;
+	&lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/util/form.js&quot;&gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/lg/base.js&quot;  &gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/lg/plugins/ligerDialog.js&quot;  &gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/lg/plugins/ligerDrag.js&quot;  &gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/lg/plugins/ligerLayout.js&quot;  &gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/lg/plugins/ligerMenu.js&quot;&gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/lg/plugins/ligerTab.js&quot;  &gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/lg/plugins/ligerAccordion.js&quot;  &gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/tree/jquery.ztree.js&quot;  &gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot;&gt;
+		    if(top!=this){//当这个窗口出现在iframe里，表示其目前已经timeout，需要把外面的框架窗口也重定向登录页面
+				  top.location=&#x27;/korei/platform/console/main.ht&#x27;;
+			}
+		    var lastTabId = null;
+    		var mian_layout_;
+            var tab = null;
+            var tree = null;
+            var ctxPath=__ctx;
+            var accordion = null;
+            var currTabId=&#x27;home&#x27;;
+          
+            var setting = {
+            		view: {showLine: true,nameIsHTML: true,dblClickExpand:false},
+            		data: {
+						key : {name: &quot;resName&quot;},
+						simpleData: {enable: true,idKey: &quot;resId&quot;,pIdKey: &quot;parentId&quot;}
+					},
+            		callback: {onClick: zTreeOnClick}
+            };
+
+            $(function (){
+                //布局
+                mian_layout_ =$(&quot;#layoutMain&quot;).ligerLayout({
+                	topHeight :80,
+                	leftWidth: 209, 
+                	height: &#x27;100%&#x27;,
+                	onHeightChanged: heightChanged });
+				//取得layout的高度
+                var height = $(&quot;.l-layout-center&quot;).height();
+                $(&quot;#leftTree&quot;).height(height-5);
+                
+                $(&quot;div.l-layout-collapse-left,div.l-layout-left&quot;).css(&quot;margin&quot;,&quot;0 0 0 0&quot;);
+                //Tab
+                $(&quot;#framecenter&quot;).ligerTab({ height: height,onBeforeSelectTabItem:function(tabid){ currTabId=tabid; }});
+
+                //面板
+                $(&quot;#accordion1&quot;).ligerAccordion({ height: height, speed: null });
+                
+
+				//获取tab的引用
+                tab = $(&quot;#framecenter&quot;).ligerGetTabManager();
+                accordion = $(&quot;#accordion1&quot;).ligerGetAccordionManager();
+				//加载菜单
+				loadMenu();
+                //隐藏加载对话框
+                $(&quot;#pageloading&quot;).hide();
+ 
+                $(&quot;#menuPanel&quot;).delegate(&quot;a.menuItem&quot;, &quot;click&quot;, function(){
+                    var id=$(this).attr(&quot;id&quot;);
+                    loadTree(id);
+                    $(this).siblings().removeClass(&quot;menuItem_hover&quot;).end().addClass(&quot;menuItem_hover&quot;);
+                    jQuery.setCookie(&quot;selectTab&quot;,id);
+                });
+                
+                //用户名后下拉箭头覆盖事件
+                /*
+                var button = $(&#x27;#loginButton&#x27;);
+        	    var box = $(&#x27;#loginBox&#x27;);
+        	    var shade=$(&#x27;#shadeEm&#x27;);
+        	    button.mouseover(function(login) {
+        	        box.toggle();
+        	        shade.toggle();
+        	        button.toggleClass(&#x27;active&#x27;);   
+        	    	t= setTimeout(function(){button_mouseout();},2000);
+        		});
+        		$(this).mouseup(function(login) {
+        			if ($(login.target).hasClass(&quot;more&quot;)){
+        				var prehref=$(login.target).attr(&#x27;prehref&#x27;);
+        				if(prehref)
+       						addToTab(prehref,$(login.target).text(),$(login.target).attr(&#x27;resid&#x27;));
+        				button.removeClass(&#x27;active&#x27;);
+        				box.hide();
+        				shade.hide();
+        			}
+        		});
+        		var button_mouseout=function(){
+    				box.hide();
+    				shade.hide();
+    				button.removeClass(&#x27;active&#x27;);	
+    			}
+        		box.mouseenter(function(){
+        			clearTimeout(t);
+        		});
+        		box.mouseleave(function(){
+        			box.hide();
+        			shade.hide();
+    				button.removeClass(&#x27;active&#x27;);
+        		});*/
+        		/*
+        		button.mouseout(function(){
+        			setTimeout(function(){
+        				box.hide();
+        				shade.hide();
+        				button.removeClass(&#x27;active&#x27;);	
+        			},200);
+        		});*/
+                window.onresize = function(){initRollButton()};
+                
+            });
+        	
+
+			//布局大小改变的时候通知tab，面板改变大小
+            function heightChanged(options){
+				
+            	$(&quot;iframe&quot;).each(function(){
+            		var tabName=$(this).attr(&quot;name&quot;);
+            		if(tabName!=undefined){
+            			$(this).height(options.middleHeight-35);
+            		}
+            		if(tabName==&quot;home&quot;){
+            			$(this).attr(&#x27;src&#x27;, $(this).attr(&#x27;src&#x27;));
+            		}
+            	});
+				$(&quot;#leftTree&quot;).height(options.middleHeight-5);
+                if (tab){
+                	var tabContent =$(&quot;.l-tab-content&quot;),
+                		h =tabContent.height();
+                	tabContent.height(h+options.diff+15);
+                }
+                //    tab.addHeight(options.diff);
+                if (accordion &amp;&amp; options.middleHeight - 25 &gt; 0)
+                    accordion.setHeight(options.middleHeight - 25);
+                
+            }
+		      
+            var aryTreeData=null;
+            //返回根节点
+            function getRootNodes(){
+            	var nodes=new Array();
+            	for(var i=0;i&lt;aryTreeData.length;i++){
+            		var node=aryTreeData[i];
+            		if(node.parentId==0){
+            			nodes.push(node);
+            		}
+            	}
+            	return nodes;
+            };
+            //初始化菜单滚动按钮
+            function initRollButton(){
+            	// 滚动 按钮宽度  =  窗体宽度 - 320 - div.welcome
+            	var welcomeWidth = 390; 
+        		$(&quot;div.menuParent&quot;).width( parseInt($(window).width())-welcomeWidth-320);
+            	
+        		var pWidth = $(&quot;div.menuParent&quot;).width(),sWidth = $(&quot;div.menuPanel&quot;).width();
+        		if(sWidth&lt;=0)return;		
+        		var left = pWidth - sWidth;
+        		if (left &lt;= 0) {
+        			$(&quot;.nav_left&quot;).show();
+        			$(&quot;.nav_right&quot;).show();
+        		}else{
+        			$(&quot;.nav_left&quot;).hide();
+        			$(&quot;.nav_right&quot;).hide();
+        		}
+        		$(&quot;div.menuPanel&quot;).css(&quot;left&quot;,0);
+        	};
+            //加载菜单面板
+            function loadMenu(){
+                $(&quot;#leftTree&quot;).empty();
+            	//一次性加载
+				$.post(&quot;/korei/platform/console/getSysRolResTreeData.ht&quot;,
+					 function(result){
+						aryTreeData=result;
+						for(var i=0;i&lt;result.length;i++){
+            				var node=result[i];
+            			}
+						//获取根节点，加载顶部按钮菜单。
+						var headers=getRootNodes();
+						var len=headers.length;
+						var menuContainer=$(&quot;#menuPanel&quot;);
+						for(var i=0;i&lt;len;i++){
+	            			var head=headers[i];
+	            			var menuItemHtml=getMenuItem(head);
+	            			menuContainer.append($(menuItemHtml));
+	            		}
+						initRollButton();
+						var zTreeObj =$.fn.zTree.init($(&quot;#leftTree&quot;), setting, aryTreeData);
+
+		    			//根据配置的是否展开
+						if(aryTreeData.length&gt;0){
+							mian_layout_.setLeftCollapse(false);
+							for(var idx=0;idx&lt;aryTreeData.length;idx++){
+								zTreeObj.expandNode(aryTreeData[idx],aryTreeData[idx].isOpen==0?true:false,false);
+							}
+						}else{
+							mian_layout_.setLeftCollapse(true);
+						}
+		    			
+		    			/*将最顶上的根菜单放在左边的tree里面 
+						if(len&gt;0){
+							var selectTab=jQuery.getCookie(&quot;selectTab&quot;);
+							var obj= $(&quot;#&quot; +selectTab);
+							if(selectTab &amp;&amp; obj.length&gt;0){
+								$(&quot;#&quot; +selectTab).addClass(&quot;menuItem_hover&quot;);
+								loadTree(selectTab);
+							}
+							else{
+								var head=headers[0];
+								var resId=head.resId;
+								$(&quot;#&quot; +resId).addClass(&quot;menuItem_hover&quot;);
+								loadTree(resId);
+							}
+						} */
+					});
+            }
+            
+            //加载资源树
+            function loadTree(resId){
+            	var targetRes=$(&quot;#&quot;+resId);
+            	var defaultUrl = targetRes.attr(&quot;url&quot;);
+           		if(defaultUrl &amp;&amp; defaultUrl.length&gt;8){
+            		if(!defaultUrl.startWith(&quot;http&quot;,false)) defaultUrl=ctxPath +defaultUrl; 
+            		addToTab(defaultUrl,targetRes.text().trim(),resId,targetRes.attr(&quot;icon&quot;));
+            	}
+            	
+            	var nodes=new Array();
+    			getChildByParentId(resId,nodes);
+    			var zTreeObj =$.fn.zTree.init($(&quot;#leftTree&quot;), setting, nodes);
+
+    			//根据配置的是否展开
+				if(nodes.length&gt;0){
+					mian_layout_.setLeftCollapse(false);
+					for(var idx=0;idx&lt;nodes.length;idx++){
+						zTreeObj.expandNode(nodes[idx],nodes[idx].isOpen==0?true:false,false);
+					}
+				}else{
+					mian_layout_.setLeftCollapse(true);
+				}
+            }
+            //加载菜单项
+            function getMenuItem(node){
+            	var url = node.defaultUrl? node.defaultUrl:&quot;&quot;;
+            	var str=&#x27;&lt;a class=&quot;menuItem&quot; id=&quot;&#x27;+node.resId+&#x27;&quot; url=&quot;&#x27;+url+&#x27;&quot; icon=&quot;&#x27;+node.icon+&#x27;&quot;&gt;&#x27;;
+           		if(node.icon!=&quot;null&quot; &amp;&amp; node.icon!=&quot;&quot;){
+           			str+=&#x27;&lt;img src=&quot;&#x27;+node.icon+&#x27;&quot; /&gt;&#x27;;
+           		}
+           		str+=&#x27;&lt;span &gt;&#x27;+node.resName+&#x27;&lt;/span&gt;&lt;/a&gt;&#x27;;
+           		return str;
+			}
+            
+            function getChildByParentId(parentId,nodes){
+            	for(var i=0;i&lt;aryTreeData.length;i++){
+            		var node=aryTreeData[i];
+            		if(node.parentId==parentId){
+            			nodes.push(node);
+            			getChildByParentId(node.resId,nodes);
+            		}
+            	}
+            };
+            
+            //处理点击事件
+            function zTreeOnClick(event, treeId, treeNode) {
+            	var url= treeNode.defaultUrl;
+            	
+           		var zTree = $.fn.zTree.getZTreeObj(&quot;leftTree&quot;);
+           		zTree.expandNode(treeNode);
+           		var tId= treeNode.tId;
+           		if(treeNode.level == 0 &amp;&amp; treeNode.open == true){
+           			$(&quot;#&quot;+tId+&quot;_a&quot;).addClass(&quot;nodeOpen&quot;);
+           		}else{
+           			$(&quot;#&quot;+tId+&quot;_a&quot;).removeClass(&quot;nodeOpen&quot;);
+           		}
+           		
+            	if(url!=null &amp;&amp; url!=&#x27;&#x27; &amp;&amp; url!=&#x27;null&#x27;){
+	            	if(!url.startWith(&quot;http&quot;,false)) url=ctxPath +url;
+	            	if(treeNode.newOpen==&quot;true&quot;){
+	            		$.openFullWindow(url);
+	            	}
+	            	else{
+	            		//扩展了tab方法。
+		            	addToTab(url,treeNode.resName,treeNode.alias);
+	            	}
+            	}
+            };
+           
+            //添加到tab或者刷新
+            function addToTab(url,txt,id){
+            	if(tab.isTabItemExist(id)){
+            		parent.tab.setTabItemSrc(id,url);
+            		parent.tab.selectTabItem(id);
+            	}
+            	else{
+            		tab.addTabItem({ tabid:id,text:txt,url:url});
+            	}
+            };
+
+          	//切换系统
+          	function saveCurrentSys(){
+            	var systemId=$(&quot;#setSubSystem&quot;).val();
+        		var form=new com.hotent.form.Form();
+        		form.creatForm(&quot;form&quot;, &quot;/korei/platform/console/saveCurrSys.ht&quot;);
+        		form.addFormEl(&quot;systemId&quot;, systemId);
+        		form.submit();
+			}
+    		
+          	// firefox下切换tab的高度处置
+			
+     &lt;/script&gt; 
+&lt;style type=&quot;text/css&quot;&gt; 
+    body,html{height:100%;}
+    body{ padding:0px; margin:0;   overflow:hidden;}  
+    #pageloading{position:absolute; left:0px; top:0px; background:white url(&#x27;/korei/styles/default/images/loading.gif&#x27;) no-repeat center; width:100%; height:100%; height:700px; z-index:99999;}
+    #top{color:White;height: 80px;}
+	#top a{color:white;}
+ &lt;/style&gt;
+&lt;/head&gt;
+&lt;body style=&quot;padding:0px;&quot;&gt;  
+	&lt;div id=&quot;pageloading&quot;&gt;&lt;/div&gt;
+	
+
+
+	&lt;link title=&quot;index&quot; name=&quot;styleTag&quot; rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;/korei/styles/default/css/jquery/plugins/jquery.chosen.css&quot;&gt;&lt;/link&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/jquery/plugins/jquery.chosen.js&quot;&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;/korei/js/jquery/plugins/jquery.htselect.js&quot;&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;
+	var isStop = false,pWidth,sWidth;
+	$(function(){
+		jQuery(&quot;#setSubSystem&quot;).chosen();
+		$(&quot;.moreinfo&quot;).htselect();
+		$(&quot;a.normalOrg&quot;).click(function(){
+			var posid=$(this).attr(&quot;posid&quot;),
+    			form=new com.hotent.form.Form();
+    		form.creatForm(&quot;orgform&quot;, &quot;/korei/platform/console/switchCurrentOrg.ht&quot;);
+    		form.addFormEl(&quot;posId&quot;, posid);
+    		form.submit();
+		});
+		$(&quot;a.normalSysLanguage&quot;).click(function(){
+			var language=$(this).attr(&quot;language&quot;),
+    			form=new com.hotent.form.Form();
+    		form.creatForm(&quot;sysLanguageform&quot;, &quot;/korei/platform/console/switchSysLanguage.ht&quot;);
+    		form.addFormEl(&quot;language&quot;, language);
+    		form.submit();
+		});
+	});
+	
+	
+	
+	function selectSystem() {
+		if ($(&quot;.show_sys&quot;).css(&quot;display&quot;) == &quot;none&quot;) {
+			$(&quot;.show_sys&quot;).css(&quot;display&quot;, &quot;block&quot;);
+		} else {
+			$(&quot;.show_sys&quot;).css(&quot;display&quot;, &quot;none&quot;);
+		}
+	};
+	function rollLeft() {
+		var lef = pWidth - sWidth;
+		var cLeft = parseInt($(&quot;div.menuPanel&quot;).css(&quot;left&quot;).replace(&quot;px&quot;, &quot;&quot;));
+		if (cLeft &lt;= lef)
+			return;
+		$(&quot;div.menuPanel&quot;).animate({
+			left : &quot;-=3px&quot;
+		}, 20, function() {
+			if (!isStop) {
+				rollLeft();
+			}
+		});
+	};
+	function startRoll(e) {
+		isStop = false;
+		if (e == 0) {
+			pWidth = $(&quot;div.menuParent&quot;).width();
+			sWidth = parseInt($(&quot;div.menuPanel&quot;).css(&quot;padding-left&quot;)
+					+ $(&quot;div.menuPanel&quot;).css(&quot;padding-left&quot;));
+			var count = 0, temp = 0;
+			$(&quot;a.menuItem&quot;).each(
+					function() {
+						count++;
+						temp = parseInt($(this).css(&quot;margin-left&quot;))
+								+ parseInt($(this).css(&quot;margin-right&quot;))
+								+ parseInt($(this).css(&quot;padding-left&quot;))
+								+ parseInt($(this).css(&quot;padding-right&quot;));
+						sWidth += $(this).width();
+					});
+			sWidth += (count + 1) * temp;
+			rollLeft();
+		} else {
+			rollRight();
+		}
+	};
+	function breakRoll() {
+		isStop = true;
+	};
+	function rollRight() {
+		var cLeft = parseInt($(&quot;div.menuPanel&quot;).css(&quot;left&quot;).replace(&quot;px&quot;, &quot;&quot;));
+		if (cLeft &gt;= 0)
+			return;
+		$(&quot;div.menuPanel&quot;).animate({
+			left : &quot;+=3px&quot;
+		}, 20, function() {
+			if (!isStop) {
+				rollRight();
+			}
+		});
+	};
+
+	// 刷新未读信息
+	function refresh() {
+
+		$.post(__ctx + &quot;/platform/system/messageSend/notReadMsg.ht&quot;, function(data) {
+
+			$(&#x27;#labMsgSize&#x27;).text(data);
+			if (data == 0) {
+				$(&#x27;#inMsg&#x27;).attr(&#x27;src&#x27;,
+						__ctx + &#x27;/styles/default/images/msg_none.png&#x27;);
+			}
+		});
+		$(&quot;iframe[name=&#x27;home&#x27;]&quot;).attr(&#x27;src&#x27;,__ctx+&#x27;/platform/console/home.ht&#x27;);
+		if(this.win)
+			this.win.close();
+	}
+
+	function showReadMsgDlg(id) {
+		var msgLength = $(&#x27;#labMsgSize&#x27;).text();
+		if (msgLength &gt; 0) {
+
+			var url = __ctx + &#x27;/platform/system/messageSend/readMsgDialog.ht&#x27;;
+			if(typeof id!=&#x27;undefined&#x27;){
+				url += &#x27;?id=&#x27;+id
+			}
+			win = $.ligerDialog.open({
+				allowClose: false,
+				url : url,
+				height : 450,
+				width : 600,
+				isResize : false,
+				title : &#x27;站内消息&#x27;
+			});
+		}
+	}
+	function changeSkin(styleName){
+		$.post(__ctx + &quot;/platform/system/sysPaur/changeSkin.ht&quot;,{&#x27;styleName&#x27;:styleName}, function(response) {
+			var json=$.parseJSON(response);
+			if(json.result){
+				window.location.reload(true);	
+			}
+			else{
+				alert(json.message);
+			}
+		});
+	}
+	
+	//更改指定皮肤分风格
+	function setLink(linktitle,styleName,obj){
+		var updatelogo=true;
+		
+		$(&#x27;link[rel=stylesheet]:[title=&#x27;+linktitle+&#x27;]&#x27;,obj).each(
+			function(){
+				var curhref=this.href;
+				var startIndex=curhref.indexOf(&quot;/styles/&quot;);
+				var endIndex=curhref.indexOf(&quot;/css/&quot;);
+				var substr=curhref.substring((startIndex+8),endIndex);
+				this.href=curhref.replace(substr,styleName) ;
+				if(updatelogo){
+					var newlogo=$(&#x27;#logoImg&#x27;).attr(&quot;src&quot;).replace(substr,styleName);
+					$(&#x27;#logoImg&#x27;).attr(&quot;src&quot;,function(){ return newlogo});
+					updatelogo=false;
+				}
+			}		
+		);
+	}
+&lt;/script&gt;
+&lt;!-- div 横排 -display:inline--&gt;
+&lt;style&gt;
+.moreinfo{ display:inline}
+.msg_div{ display:inline}
+&lt;/style&gt;
+
+
+&lt;div class=&quot;index_top&quot; &gt; 
+	&lt;div class=&quot;left_logo&quot;&gt;
+		&lt;img id=&quot;logoImg&quot; src=&quot;/korei/styles/default/images/korei/kr_bg.png&quot; /&gt;
+	&lt;/div&gt;
+	&lt;div class=&quot;search_welcome&quot; &gt;
+		&lt;div&gt;
+			&lt;div class=&quot;welDive&quot; style=&quot;float: right;&quot;&gt;
+			 	&lt;span &gt;
+					&lt;span style=&quot;cursor: pointer;text-decoration: underline;&quot;&gt; 
+						&lt;span &gt;
+							&lt;a style=&quot;text-decoration:none;&quot; class=&quot;top_exitButton&quot; href=&quot;/korei/logout&quot;&gt;退出&lt;/a&gt;
+						&lt;/span&gt;
+					&lt;/span&gt;
+			 	&lt;/span&gt;
+			&lt;/div&gt;
+			&lt;div class=&quot;welDive&quot; style=&quot;float: right;margin-top: 5px;padding-right: 10px;&quot;&gt;
+				欢迎您，
+				&amp;#36229;&amp;#32423;&amp;#31649;&amp;#29702;&amp;#21592;
+				
+					&amp;nbsp;&amp;nbsp;|&lt;span style=&quot;color:#0095EB; padding-left:10px;&quot;&gt;校区：天河店&lt;/span&gt;
+				
+				&lt;/div&gt;
+		 &lt;/div&gt;
+	&lt;/div&gt;
+	&lt;div class=&quot;index_menu&quot;&gt;
+		&lt;div class=&quot;menuParent&quot;&gt;
+		&lt;/div&gt;
+		&lt;div class=&quot;nav_button&quot;&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+	&lt;div class=&quot;head_bg&quot;&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+
+ 	&lt;div id=&quot;layoutMain&quot; style=&quot;margin:0px 1px 0px 0px;&quot;&gt;
+      	&lt;div position=&quot;left&quot; id=&quot;accordion1&quot;   title=&quot; 科睿机器人&quot;&gt; 
+      		&lt;ul id=&#x27;leftTree&#x27; class=&#x27;ztree&#x27; style=&quot;overflow:auto;height: 100%;&quot; &gt;&lt;/ul&gt;
+       	&lt;/div&gt;	 
+       
+       	&lt;div position=&quot;center&quot; id=&quot;framecenter&quot;&gt; 
+       		&lt;div tabid=&quot;home&quot; title=&quot;欢迎使用&quot;&gt;
+        	
+           		
+           			
+           				&lt;iframe frameborder=&quot;0&quot; name=&quot;home&quot; src=&quot;/korei/platform/console/home.ht&quot;&gt;&lt;/iframe&gt;
+           			
+           			
+           		
+           	
+           	&lt;/div&gt;
+       	&lt;/div&gt;
+   	&lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_pytest.py::TestCaseWithPytest::test_all[TC004-POST-http://106.13.199.209:8080/korei/korei/student/save.ht-Y-None-None-None-expect3-JSON-5]</td>
+          <td class="col-duration">0.07</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>TC004 Y
+响应数据类型是 JSON
+前置条件 None
+现在开始执行第5行的用例
+POST http://106.13.199.209:8080/korei/korei/student/save.ht {&#x27;creator&#x27;: &#x27;&#x27;, &#x27;name&#x27;: &#x27;test2301&#x27;, &#x27;sex&#x27;: &#x27;0&#x27;, &#x27;birthday&#x27;: &#x27;2020-11-29&#x27;, &#x27;important&#x27;: &#x27;0&#x27;, &#x27;source&#x27;: &#x27;1&#x27;, &#x27;sourceId&#x27;: &#x27;10000019078739&#x27;, &#x27;sourceName&#x27;: &#x27;112&#x27;, &#x27;region&#x27;: &#x27;&#x27;, &#x27;province&#x27;: &#x27;&#x27;, &#x27;city&#x27;: &#x27;&#x27;, &#x27;Area&#x27;: &#x27;&#x27;, &#x27;marketstaffName&#x27;: &#x27;&#x27;, &#x27;marketstaffId&#x27;: &#x27;&#x27;, &#x27;allograph&#x27;: &#x27;&#x27;, &#x27;wechat&#x27;: &#x27;&#x27;, &#x27;mobile&#x27;: &#x27;&#x27;, &#x27;ndTelephone&#x27;: &#x27;&#x27;, &#x27;qq&#x27;: &#x27;&#x27;, &#x27;email&#x27;: &#x27;&#x27;, &#x27;address&#x27;: &#x27;&#x27;, &#x27;comment&#x27;: &#x27;&#x27;, &#x27;studentId&#x27;: &#x27;&#x27;, &#x27;salerId&#x27;: &#x27;&#x27;, &#x27;status&#x27;: &#x27;&#x27;, &#x27;parent.name&#x27;: &#x27;&#x27;, &#x27;parent.parentId&#x27;: &#x27;&#x27;, &#x27;parent.createTime&#x27;: &#x27;&#x27;, &#x27;parent.creator&#x27;: &#x27;&#x27;, &#x27;parent.relation&#x27;: &#x27;&#x27;, &#x27;parent.phone&#x27;: &#x27;13577771888&#x27;, &#x27;parent.qq&#x27;: &#x27;&#x27;, &#x27;parent.wechat&#x27;: &#x27;&#x27;, &#x27;parent.email&#x27;: &#x27;&#x27;, &#x27;parent.ndTelephone&#x27;: &#x27;&#x27;, &#x27;parent.telephone&#x27;: &#x27;&#x27;, &#x27;parent.address&#x27;: &#x27;&#x27;}
+{&quot;cause&quot;:&quot;&quot;,&quot;message&quot;:&quot;保存成功&quot;,&quot;result&quot;:1}
+<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_pytest.py::TestCaseWithPytest::test_all[TC009-GET-https://www.baidu.com-Y-None-None-None-百度一下-XML-6]</td>
+          <td class="col-duration">0.19</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stdout call------------------------------ <br/>TC009 Y
+响应数据类型是 XML
+前置条件 None
+现在开始执行第6行的用例
+GET https://www.baidu.com None
+&lt;!DOCTYPE html&gt;
+&lt;!--STATUS OK--&gt;&lt;html&gt; &lt;head&gt;&lt;meta http-equiv=content-type content=text/html;charset=utf-8&gt;&lt;meta http-equiv=X-UA-Compatible content=IE=Edge&gt;&lt;meta content=always name=referrer&gt;&lt;link rel=stylesheet type=text/css href=https://ss1.bdstatic.com/5eN1bjq8AAUYm2zgoY3K/r/www/cache/bdorz/baidu.min.css&gt;&lt;title&gt;百度一下，你就知道&lt;/title&gt;&lt;/head&gt; &lt;body link=#0000cc&gt; &lt;div id=wrapper&gt; &lt;div id=head&gt; &lt;div class=head_wrapper&gt; &lt;div class=s_form&gt; &lt;div class=s_form_wrapper&gt; &lt;div id=lg&gt; &lt;img hidefocus=true src=//www.baidu.com/img/bd_logo1.png width=270 height=129&gt; &lt;/div&gt; &lt;form id=form name=f action=//www.baidu.com/s class=fm&gt; &lt;input type=hidden name=bdorz_come value=1&gt; &lt;input type=hidden name=ie value=utf-8&gt; &lt;input type=hidden name=f value=8&gt; &lt;input type=hidden name=rsv_bp value=1&gt; &lt;input type=hidden name=rsv_idx value=1&gt; &lt;input type=hidden name=tn value=baidu&gt;&lt;span class=&quot;bg s_ipt_wr&quot;&gt;&lt;input id=kw name=wd class=s_ipt value maxlength=255 autocomplete=off autofocus=autofocus&gt;&lt;/span&gt;&lt;span class=&quot;bg s_btn_wr&quot;&gt;&lt;input type=submit id=su value=百度一下 class=&quot;bg s_btn&quot; autofocus&gt;&lt;/span&gt; &lt;/form&gt; &lt;/div&gt; &lt;/div&gt; &lt;div id=u1&gt; &lt;a href=http://news.baidu.com name=tj_trnews class=mnav&gt;新闻&lt;/a&gt; &lt;a href=https://www.hao123.com name=tj_trhao123 class=mnav&gt;hao123&lt;/a&gt; &lt;a href=http://map.baidu.com name=tj_trmap class=mnav&gt;地图&lt;/a&gt; &lt;a href=http://v.baidu.com name=tj_trvideo class=mnav&gt;视频&lt;/a&gt; &lt;a href=http://tieba.baidu.com name=tj_trtieba class=mnav&gt;贴吧&lt;/a&gt; &lt;noscript&gt; &lt;a href=http://www.baidu.com/bdorz/login.gif?login&amp;amp;tpl=mn&amp;amp;u=http%3A%2F%2Fwww.baidu.com%2f%3fbdorz_come%3d1 name=tj_login class=lb&gt;登录&lt;/a&gt; &lt;/noscript&gt; &lt;script&gt;document.write(&#x27;&lt;a href=&quot;http://www.baidu.com/bdorz/login.gif?login&amp;tpl=mn&amp;u=&#x27;+ encodeURIComponent(window.location.href+ (window.location.search === &quot;&quot; ? &quot;?&quot; : &quot;&amp;&quot;)+ &quot;bdorz_come=1&quot;)+ &#x27;&quot; name=&quot;tj_login&quot; class=&quot;lb&quot;&gt;登录&lt;/a&gt;&#x27;);
+                &lt;/script&gt; &lt;a href=//www.baidu.com/more/ name=tj_briicon class=bri style=&quot;display: block;&quot;&gt;更多产品&lt;/a&gt; &lt;/div&gt; &lt;/div&gt; &lt;/div&gt; &lt;div id=ftCon&gt; &lt;div id=ftConw&gt; &lt;p id=lh&gt; &lt;a href=http://home.baidu.com&gt;关于百度&lt;/a&gt; &lt;a href=http://ir.baidu.com&gt;About Baidu&lt;/a&gt; &lt;/p&gt; &lt;p id=cp&gt;&amp;copy;2017&amp;nbsp;Baidu&amp;nbsp;&lt;a href=http://www.baidu.com/duty/&gt;使用百度前必读&lt;/a&gt;&amp;nbsp; &lt;a href=http://jianyi.baidu.com/ class=cp-feedback&gt;意见反馈&lt;/a&gt;&amp;nbsp;京ICP证030173号&amp;nbsp; &lt;img src=//www.baidu.com/img/gs.gif&gt; &lt;/p&gt; &lt;/div&gt; &lt;/div&gt; &lt;/div&gt; &lt;/body&gt; &lt;/html&gt;
+
+<br/></div></td></tr></tbody></table></body></html>

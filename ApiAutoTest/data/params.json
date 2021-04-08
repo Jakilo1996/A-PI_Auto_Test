@@ -1,0 +1,7 @@
+{
+  "FinanceRegisterSuccess":{"mobilephone": "13567589070","pwd":"123456","regname":"jake"},
+  "FinanceRegisterAgain": {"mobilephone": "13567589070","pwd":"123456","regname":"jake"},
+  "KoreiLoginSuccess": {"username":"admin","password":"1"},
+  "KoreiAddStudentsSuccess":{"creator": "", "name": "test2301", "sex": "0", "birthday": "2020-11-29", "important": "0", "source": "1", "sourceId": "10000019078739", "sourceName": "112", "region": "", "province": "", "city": "", "Area": "", "marketstaffName": "", "marketstaffId": "", "allograph": "", "wechat": "", "mobile": "", "ndTelephone": "", "qq": "", "email": "", "address": "", "comment": "", "studentId": "", "salerId": "", "status": "", "parent.name": "", "parent.parentId": "", "parent.createTime": "", "parent.creator": "", "parent.relation": "", "parent.phone": "13577771888", "parent.qq": "", "parent.wechat": "", "parent.email": "", "parent.ndTelephone": "", "parent.telephone": "", "parent.address": ""},
+  "WebToursLoginSuccess": {"JSFormSubmit":"off","login.x":"19","login.y":"9","password":"bean","username":"jojo"}
+}

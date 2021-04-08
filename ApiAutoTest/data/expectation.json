@@ -1,0 +1,8 @@
+{
+  "FinanceRegisterSuccess":{"status": 0, "code": "10001", "data": null, "msg": "注册成功"},
+  "FinanceRegisterAgain": {"status": 0, "code": "20110", "data": null, "msg": "手机号码已被注册"},
+  "KoreiAddStudentsSuccess": {"cause": "", "message": "保存成功", "result": 1},
+  "KoreiLoginSuccess": "退出",
+  "WebToursLoginSuccess": "jojo",
+  "BaiduSuccess": "百度一下"
+}
