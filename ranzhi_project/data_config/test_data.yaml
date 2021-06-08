@@ -1,0 +1,27 @@
+'test_login_success':
+   # -空格中括号 有' key与测试方法名一一对应
+  - ['admin', '123456', 'admin', '1','login_success']
+  - ['9527258742', '123456', '李越川258742', '2','login_success']
+  - ['9527396399', '123456', '李越川396399', '3','login_success']
+  - ['9527116454', '123456', '李越川116454', '4','login_success']
+  - ['9527720334', '123456', '李越川720334', '5','login_success']
+'test_login_failed':
+  - ['admin', '1236', 'x,/html/body/div[2]/div/div/div[1]/div', '登录失败，请检查您的成员名或密码是否填写正确.。Wrong', '1','login_failed']
+  - ['s9527258742', '1236', 'x,/html/body/div[2]/div/div/div[1]/div', '登录失败，请检查您的成。', '2','login_failed']
+  - ['c9527396399', '123336', 'x,/html/body/div[2]/div/div/div[1]/div', '失败', '3','login_failed']
+  - ['q9527116454', '1236', 'x,/html/body/div[2]/div/div/div[1]/div', '登录失败，', '4','login_failed']
+  - ['d9527720334', '1236', 'x,/html/body/div[2]/div/div/div[1]/div', '登录失败，请检查您的成员名或密码是否填写正确', '5','login_failed']
+'useadd_success':
+  - ['jakiro1', '邱杰', '123456', '123456', '1222222@qq.com', 'jakiro1','1','useadd_success']
+  - ['jakiro2', '邱杰', '123456', '123456', '1222223@qq.com', 'jakiro3','2','useadd_success']
+  - ['jakiro3', '邱杰', '123456', '123456', '1222224@qq.com', 'jakiro3','3','useadd_success']
+'useadd_failed':
+  - ['ja', '邱杰', '123456', '123456', '1222222@qq.com', '用户名应当为字母或数字的组合，至少三位', 'i,accountLabel','1','useadd_failed']
+  - ['jakiro2', '', '123456', '123456', '1222223@qq.com', '真实姓名不能为空。', 'i,realnameLabel','2','useadd_failed']
+  - ['jakiro3', '邱杰', '123456', '12345', '1222224@qq.com', '两次密码应当相等。', 'i,password1Label','3','useadd_failed']
+  - ['jakiro4', '邱杰', '123456', '12345', '1222225qq.com', '邮箱应当为合法的EMAIL。', 'i,emailLabel','4','useadd_failed']
+  - ['', '邱杰', '123456', '123456', '1222226@qq.com', '用户名不能为空。;用户名应当为字母或数字的组合，至少三位', 'i,accountLabel','5','useadd_failed']
+  - ['jakiro6', '邱杰', '123456', '123456', '', '邮箱不能为空。', 'i,emailLabel','6','useadd_failed']
+  - ['jakiro7', '邱杰', '123456', '123456', '1222228@qq.com', '密码不能为空。', 'i,password1Label','7','useadd_failed']
+  - ['jakiro8', '邱杰', '123456', '123456', '1222229@qq.com', '重复密码不能为空。', 'i,password2Label','8','useadd_failed']
+

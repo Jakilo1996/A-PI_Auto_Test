@@ -1,0 +1,25 @@
+RanzhiLogin:
+  # yaml文件键值对得用冒号连接，冒号后得有空格
+  USERNAME: 'i,account'
+  PWD: 'i,password'
+  SUBMIT: 'i,submit'
+
+AddUser:
+  ELE_CMS_BUTTON_SELECTOR: 'x,//*[@id="s-menu-superadmin"]/button'
+  FRAME_SWITCH_SELECTOR: 'x,//*[@id="iframe-superadmin"]'
+  ADD_MEMBER_BUTTON_SELECTOR: 'x,//*[@id="shortcutBox"]/div/div[1]/div/a/h3'
+  USERNAME_INPUT_SELECTOR: 'x,//*[@id="account"]'
+  REALNAME_INPUT_SELECTOR: 'x,//*[@id="realname"]'
+  GENDER_INPUT_SELECTOR: ['genderm', 'genderf']
+  DEPARTMENT_INPUT_SELECTOR1: 'i,dept'
+  DEPARTMENT_INPUT_SELECTOR2: 'tn,option'
+  ROLE_INPUT_SELECTOR1: 'i,role'
+  ROLE_INPUT_SELECTOR2: 'tn,option'
+  PASSWORD_INPUT_SELECTOR: 'i,password1'
+  CONFIRM_PASSWORD_INPUT_SELECTOR: 'i,password2'
+  EMAIL_INPUT_SELECTOR: 'i,email'
+  SUBMIT_BUTTON_SELECTOR: 'i,submit'
+  PAGE_INPUT_SELECTOR: 'i,_pageID'
+  GOTO_BUTTON_SELECTOR: 'i,goto'
+  ADD_MEMBER_BUTTON_SELECTOR1: 'plt,添加成员'
+  LAST_USERNAME_SELECTOR: 'body > div > div > div > div.col-md-10 > div > div > table > tbody > tr:last-child > td:nth-child(3)'
